@@ -43,7 +43,7 @@ st.write("Enter the last 7 days of gold prices:")
 
 last_7_days = []
 for i in range(1, 8):
-    price = st.number_input(f"Day {i} Price:", min_value=0.0, step=0.01, format="%.2f",value=None)
+    price = st.number_input(f"Day {i} market Price:", min_value=0.0, step=0.01, format="%.2f",value=None)
     last_7_days.append(price)
 
 if st.button("Predict Gold Price"):
