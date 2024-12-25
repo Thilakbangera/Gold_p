@@ -40,7 +40,7 @@ st.write("**Accurate predictions for the future gold prices**")
 
 st.header("Input Historical Prices")
 st.write("Enter the last 7 days of gold prices:")
-st.write("Available at investing.com")
+st.write("Available at investing.com/commodities/gold")
 
 last_7_days = []
 for i in range(1, 8):
