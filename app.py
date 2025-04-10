@@ -1,65 +1,72 @@
 import streamlit as st
 import numpy as np
-import pandas as pd
 import pickle
-from sklearn.ensemble import RandomForestRegressor
+from tavily_utils import fetch_gold_news, get_sentiment_score, ask_tavily
 
+# Load model
 with open("LinearRegressionModel.pkl", "rb") as f:
-    ln = pickle.load(f)
+    model = pickle.load(f)
 
-page_bg_img = '''
-<style>
-body {
-    background-image: url("https://your-image-url-here.com/background.jpg");
-    background-size: cover;
-    color: white;
-}
-h1, h2, h3, h4, h5, h6 {
-    color: gold;
-    text-shadow: 2px 2px 4px #000000;
-}
-.stButton>button {
-    background-color: gold;
-    color: black;
-    font-size: 18px;
-    border-radius: 10px;
-    border: 2px solid black;
-    padding: 10px 20px;
-}
-.stButton>button:hover {
-    background-color: black;
-    color: gold;
-    transition: 0.3s ease;
-}
-</style>
-'''
-st.markdown(page_bg_img, unsafe_allow_html=True)
+st.set_page_config(page_title="Gold Price Prediction", layout="wide")
+st.title("🌟 Gold Price Prediction App")
 
-st.title("Gold Price Prediction")
-st.write("**Accurate predictions for the future gold prices**")
-
-st.header("Input Historical Prices")
-st.write("Enter the last 7 days of gold prices:")
-st.write("Available at: [Investing.com Gold](https://www.investing.com/commodities/gold).")
-
+# 📥 User Inputs
+st.header("📥 Enter Last 7 Days of Gold Prices")
 last_7_days = []
-for i in range(1, 8):
-    price = st.number_input(f"Day {i} market Price:", min_value=0.0, step=0.01, format="%.2f",value=None)
+cols = st.columns(7)
+for i, col in enumerate(cols):
+    price = col.number_input(f"Day {i+1}", min_value=0.0, format="%.2f", value=None)
     last_7_days.append(price)
 
-if st.button("Predict Gold Price"):
-    if len(last_7_days) == 7 and all(x > 0 for x in last_7_days):
+if st.button("📈 Predict Next Day Price"):
+    if all(p is not None and p > 0 for p in last_7_days):
         input_data = np.array(last_7_days).reshape(1, -1)
-        predicted_price = ln.predict(input_data)
-        st.success(f"Predicted Gold Price for the next day: ${predicted_price[0]:.2f}")
-        # Price per ounce and per gram (in USD) after prediction
-        troy_ounce_to_gram = 31.1035  # Conversion factor from troy ounce to grams
-        gold_price_per_gram_usd =  predicted_price[0] / troy_ounce_to_gram  # Price per gram in USD
-        gold_price_per_gram_inr = gold_price_per_gram_usd * 84.93  # Convert USD price to INR (assuming USD to INR = 82.5)
-        
-        # Display the price per gram in INR in green text
-        st.markdown(f"<h3 style='color:green;'>Price of gold per gram in INR (calculated from prediction): ₹{gold_price_per_gram_inr:.2f}</h3>", unsafe_allow_html=True)
+        predicted_price = model.predict(input_data)[0]
 
+        st.success(f"💰 Predicted Gold Price: ${predicted_price:.2f}")
+        price_per_gram = predicted_price / 31.1035
+        price_inr = price_per_gram * 84.93
+        st.markdown(f"💎 Price per gram (INR): ₹{price_inr:.2f}")
     else:
         st.error("Please enter valid prices for all 7 days.")
 
+st.markdown("---")
+
+# 📰 News Section with title + preview + link
+st.header("📰 Live Gold News")
+
+news_articles = fetch_gold_news()
+if news_articles:
+    for article in news_articles[:8]:
+        title = article.get("title", "No Title")
+        desc = article.get("body", "")[:200].strip() + "..."
+        url = article.get("url", "#")
+
+        st.markdown(f"### 🔗 [{title}]({url})", unsafe_allow_html=True)
+        st.write(desc)
+        st.markdown("---")
+else:
+    st.warning("No news available at the moment.")
+
+# 📊 Sentiment
+st.header("📊 Market Sentiment from News")
+sentiment_score = get_sentiment_score()
+if sentiment_score > 0.1:
+    sentiment_text = "Positive 😊"
+elif sentiment_score < -0.1:
+    sentiment_text = "Negative 😟"
+else:
+    sentiment_text = "Neutral 😐"
+st.metric("🧠 Average Sentiment", sentiment_text, f"{sentiment_score:.2f}")
+
+st.markdown("---")
+
+# 🤖 Tavily Q&A
+st.header("🤖 Ask Tavily About Gold")
+question = st.text_input("What do you want to know about gold?")
+if st.button("Ask"):
+    if question:
+        answer = ask_tavily(question)
+        st.info(answer)
+    else:
+        st.warning("Please enter a question.")
