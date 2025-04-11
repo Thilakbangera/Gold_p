@@ -1,8 +1,7 @@
 import requests
-import streamlit as st
 from textblob import TextBlob
+import streamlit as st
 
-# Load API key from Streamlit secrets
 TAVILY_API_KEY = st.secrets["TAVILY_API_KEY"]
 HEADERS = {"Authorization": f"Bearer {TAVILY_API_KEY}"}
 
@@ -12,18 +11,16 @@ def fetch_gold_news():
     data = {
         "query": "gold price news",
         "search_depth": "basic",
-        "include_answer": True,
-        "include_images": False,
-        "num_results": 8
+        "include_answer": True
     }
     response = requests.post(url, json=data, headers=HEADERS)
     if response.status_code == 200:
         return response.json().get("results", [])
     else:
-        st.error(f"Tavily Error: {response.status_code} - {response.text}")
+        print("❌ Error fetching news:", response.text)
         return []
 
-# 📊 Analyze sentiment
+# 📊 Analyze sentiment of a single news article
 def analyze_sentiment(text):
     blob = TextBlob(text)
     polarity = blob.sentiment.polarity
@@ -34,17 +31,15 @@ def analyze_sentiment(text):
     else:
         return "Neutral"
 
-# 📈 Get average sentiment score
+# 📈 Average sentiment score
 def get_sentiment_score():
     articles = fetch_gold_news()
     sentiments = [analyze_sentiment(article.get("body", "")) for article in articles]
-
     sentiment_values = {"Positive": 1, "Neutral": 0, "Negative": -1}
     scores = [sentiment_values.get(s, 0) for s in sentiments]
-
     return sum(scores) / len(scores) if scores else 0
 
-# 💬 Ask Tavily Q&A
+# 🤖 Ask Tavily
 def ask_tavily(question):
     url = "https://api.tavily.com/search"
     data = {
@@ -56,4 +51,5 @@ def ask_tavily(question):
     if response.status_code == 200:
         return response.json().get("answer", "No answer available.")
     else:
-        return "Tavily API Error: " + response.text
+        print("❌ Error in Q&A:", response.text)
+        return "Tavily API Error"
