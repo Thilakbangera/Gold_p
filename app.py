@@ -32,9 +32,8 @@ if st.button("📈 Predict Next Day Price"):
 
 st.markdown("---")
 
-# 📰 News Section with title + preview + link
+# 📰 News Section
 st.header("📰 Live Gold News")
-
 news_articles = fetch_gold_news()
 if news_articles:
     for article in news_articles[:8]:
